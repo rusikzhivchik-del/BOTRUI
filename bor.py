@@ -158,6 +158,20 @@ async def handle_photo(message: Message):
 
     await message.answer(text)
 
+# ------------------- ОСТАНОВКА БОТА -------------------
+
+@dp.message(Command(commands=["stop"]))
+async def stop_bot(message: Message):
+    if message.from_user.username != ADMIN_USERNAME:
+        await message.answer("⛔ У вас нет доступа для остановки бота.")
+        return
+
+    await message.answer("Бот останавливается...")
+
+    # Останавливаем polling и закрываем соединение с Telegram
+    await dp.stop_polling()  # Останавливает процесс опроса
+    await bot.close()  # Закрывает соединение с Telegram
+
 # ------------------- ЗАПУСК -------------------
 
 if __name__ == "__main__":
