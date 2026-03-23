@@ -1,11 +1,8 @@
 import random
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, ContentType
 from aiogram.filters import Command
-from aiogram import F
-from aiogram.types import FSInputFile
-from aiogram import Bot, Dispatcher
-from aiogram.client.session.aiohttp import AiohttpSession
+import asyncio
 
 # ------------------- НАСТРОЙКИ -------------------
 API_TOKEN = "8672741740:AAHDn8SPjl6UazjaK4ZP0zKYZoAYChq--MA"
@@ -15,8 +12,9 @@ ADMIN_USERNAME = "rusik_tut1"  # твой Telegram username без @
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# ------------------- ГЛОБАЛЬНЫЙ ФЛАГ -------------------
+# ------------------- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ -------------------
 BOT_ACTIVE = True  # True — бот активен, False — приостановлен
+ALLOWED_USERS = {ADMIN_USERNAME}  # множество разрешённых пользователей
 
 # ------------------- ДАННЫЕ ДЛЯ СИГНАЛОВ -------------------
 signals = ["BUY 🟢", "SELL 🔴"]
@@ -33,6 +31,9 @@ phrases = [
 # ------------------- КОМАНДА СТАРТ -------------------
 @dp.message(Command(commands=["start"]))
 async def start(message: Message):
+    if message.from_user.username not in ALLOWED_USERS:
+        await message.answer("⛔ У вас нет доступа к боту.")
+        return
     await message.answer("📸 Отправь скрин графика — я дам сигнал")
 
 # ------------------- КОМАНДЫ АДМИНА -------------------
@@ -52,11 +53,40 @@ async def start_bot(message: Message):
     BOT_ACTIVE = True
     await message.answer("✅ Бот снова активен.")
 
+# ------------------- УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ -------------------
+@dp.message(Command(commands=["adduser"]))
+async def add_user(message: Message):
+    if message.from_user.username != ADMIN_USERNAME:
+        return
+    parts = message.text.split()
+    if len(parts) < 2:
+        await message.answer("Используй: /adduser <username>")
+        return
+    username_to_add = parts[1].lstrip("@")
+    ALLOWED_USERS.add(username_to_add)
+    await message.answer(f"✅ Пользователь @{username_to_add} добавлен.")
+
+@dp.message(Command(commands=["deluser"]))
+async def del_user(message: Message):
+    if message.from_user.username != ADMIN_USERNAME:
+        return
+    parts = message.text.split()
+    if len(parts) < 2:
+        await message.answer("Используй: /deluser <username>")
+        return
+    username_to_remove = parts[1].lstrip("@")
+    ALLOWED_USERS.discard(username_to_remove)
+    await message.answer(f"❌ Пользователь @{username_to_remove} удалён.")
+
 # ------------------- ОБРАБОТЧИК ФОТО -------------------
 @dp.message(F.content_type == ContentType.PHOTO)
 async def handle_photo(message: Message):
     if not BOT_ACTIVE:
         await message.answer("⛔ Бот временно приостановлен.")
+        return
+
+    if message.from_user.username not in ALLOWED_USERS:
+        await message.answer("⛔ У вас нет доступа к боту.")
         return
 
     signal = random.choice(signals)
@@ -77,5 +107,4 @@ async def handle_photo(message: Message):
 
 # ------------------- ЗАПУСК -------------------
 if __name__ == '__main__':
-    import asyncio
     asyncio.run(dp.start_polling(bot))
