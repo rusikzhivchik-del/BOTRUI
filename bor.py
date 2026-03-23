@@ -1,8 +1,8 @@
 import random
 import asyncio
 from aiogram import Bot, Dispatcher
-from aiogram.types import Message
-from aiogram.filters import Command
+from aiogram.types import Message, ContentType as CT
+from aiogram.filters import Command, ContentType
 
 # ------------------- НАСТРОЙКИ -------------------
 API_TOKEN = "8672741740:AAHDn8SPjl6UazjaK4ZP0zKYZoAYChq--MA"
@@ -72,7 +72,7 @@ async def handle_message(message: Message):
         await message.answer(f"Список пользователей: {', '.join('@'+u for u in users) if users else 'пуст'}")
 
 # ------------------- ОБРАБОТКА ФОТО -------------------
-@dp.message(content_types=["photo"])
+@dp.message(ContentType(CT.PHOTO))
 async def handle_photo(message: Message):
     if not BOT_ACTIVE:
         await message.answer("⛔ Бот временно приостановлен.")
