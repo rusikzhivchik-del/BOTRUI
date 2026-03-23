@@ -36,6 +36,16 @@ candlestick_patterns = [
     "Пинбар — указывает на разворот или продолжение движения"
 ]
 
+# ------------------- РАЗНЫЕ КОММЕНТАРИИ -------------------
+entry_comments = [
+    "Цена подошла к ключевой зоне сопротивления, крупные игроки активно продают, подтверждение на свечах.",
+    "На рынке формируется структура падения, сигнал подтверждается динамикой объёма.",
+    "Сигнал возникает после теста зоны ликвидности, свечной паттерн подтверждает направление.",
+    "Цена отскочила от зоны спроса, наблюдается подтверждающий импульс продавцов.",
+    "Резкий откат от уровня сопротивления подтверждает точку входа на снижение.",
+    "Тестирование ключевого уровня и подтверждение свечным паттерном указывают на нисходящее движение."
+]
+
 # ------------------- КОМАНДЫ АДМИНА -------------------
 @dp.message(Command(commands=["stopbot"]))
 async def stop_bot(message: Message):
@@ -94,7 +104,7 @@ async def handle_photo(message: Message):
 
     # Выбор сигнала и длительности бинарного опциона
     signal, signal_desc = random.choice(signals)
-    duration = random.choice(durations)  # 1,2,3 минуты
+    duration = random.choice(durations)
     confidence_value = random.randint(*confidence_range)
     phrase = random.choice(phrases)
 
@@ -109,8 +119,8 @@ async def handle_photo(message: Message):
     chosen_pattern = random.choice(candlestick_patterns)
     candlestick_text = f"Свечной паттерн:\n• {chosen_pattern}"
 
-    # Простой анализ после сигнала
-    simple_analysis = "Анализ: цена реагирует на зоны спроса и предложения, сигнал подтверждён текущим движением."
+    # Выбираем случайный комментарий
+    comment_text = random.choice(entry_comments)
 
     # Формируем финальный ответ
     response = (
@@ -121,7 +131,7 @@ async def handle_photo(message: Message):
         f"📊 Уверенность: {confidence_value}%\n\n"
         f"{smpa_text}\n\n"
         f"{candlestick_text}\n\n"
-        f"{simple_analysis}\n\n"
+        f"💡 Комментарий: {comment_text}\n\n"
         f"⚠️ Не является финансовой рекомендацией"
     )
 
