@@ -7,7 +7,7 @@ from aiogram.filters import Command
 
 # ------------------- НАСТРОЙКИ -------------------
 API_TOKEN = "8672741740:AAHDn8SPjl6UazjaK4ZP0zKYZoAYChq--MA"
-ADMIN_USERNAME = "rusik_tut1"
+ADMIN_USERNAME = "trade_best1"
 MAX_FILE_SIZE_MB = 5  # максимальный размер фото
 REQUEST_COOLDOWN = 60  # ограничение: 1 запрос в 60 секунд
 
