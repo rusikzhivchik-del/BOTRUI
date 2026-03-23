@@ -6,7 +6,7 @@ from aiogram.filters import Command
 
 # ------------------- НАСТРОЙКИ -------------------
 API_TOKEN = "8672741740:AAHDn8SPjl6UazjaK4ZP0zKYZoAYChq--MA"
-ADMIN_USERNAME = "rusik_tut1"  # ваш Telegram username без @
+ADMIN_USERNAME = "rusik_tut1"
 
 # ------------------- ИНИЦИАЛИЗАЦИЯ -------------------
 bot = Bot(token=API_TOKEN)
@@ -18,8 +18,8 @@ ALLOWED_USERS = {ADMIN_USERNAME}
 
 # ------------------- ДАННЫЕ ДЛЯ СИГНАЛОВ -------------------
 signals = [
-    ("BUY 🟢", "💚 Покупка — ожидается рост цены"),
-    ("SELL 🔴", "❤️ Продажа — ожидается падение цены")
+    ("BUY 🟢", "💚 Повышение — ожидается рост цены"),
+    ("SELL 🔴", "❤️ Понижение — ожидается падение цены")
 ]
 phrases = [
     "📊 Анализ графика завершён...",
@@ -29,6 +29,14 @@ phrases = [
     "⚡ Импульс движения усиливается"
 ]
 confidence_range = (68, 91)
+durations = [1, 2, 3]  # минуты для бинарного опциона
+candlestick_patterns = [
+    "Доджи — неопределённость, возможный разворот",
+    "Марубозу — сильный тренд без теней",
+    "Падающая звезда — сигнал на разворот вниз",
+    "Молот — сигнал на разворот вверх",
+    "Пинбар — указывает на разворот или продолжение движения"
+]
 
 # ------------------- КОМАНДЫ АДМИНА -------------------
 @dp.message(Command(commands=["stopbot"]))
@@ -86,12 +94,13 @@ async def handle_photo(message: Message):
     await message.answer(f"⏳ Анализируем график, подождите {wait_time} секунд...")
     await asyncio.sleep(wait_time)
 
-    # Выбор сигнала
+    # Выбор сигнала и длительности для бинарного опциона
     signal, signal_desc = random.choice(signals)
+    duration = random.choice(durations)  # 1,2,3 минуты
     confidence_value = random.randint(*confidence_range)
     phrase = random.choice(phrases)
 
-    # Текст по Smart Money PA
+    # Smart Money PA текст
     smpa_text = (
         "📌 **Smart Money PA (1M таймфрейм):**\n"
         "• 🔹 Определяем зоны интереса крупных участников\n"
@@ -99,22 +108,16 @@ async def handle_photo(message: Message):
         "• 🔹 Сигнал сформирован на основе активности «умных денег»"
     )
 
-    # Пояснение по свечным паттернам
-    candlestick_text = (
-        "🕯 **Свечные паттерны:**\n"
-        "• Доджи — неопределённость, возможный разворот\n"
-        "• Марубозу — сильный тренд без теней\n"
-        "• Падающая звезда — сигнал на разворот вниз\n"
-        "• Молот — сигнал на разворот вверх\n"
-        "• Пинбар — указывает на разворот или продолжение движения"
-    )
+    # Случайно выбираем 1-2 свечных паттерна
+    chosen_patterns = random.sample(candlestick_patterns, k=random.randint(1,2))
+    candlestick_text = "🕯 **Свечные паттерны:**\n" + "\n".join(f"• {p}" for p in chosen_patterns)
 
-    # Формируем финальный красивый ответ
+    # Финальный ответ
     response = (
         f"🎯 {phrase}\n\n"
-        f"💹 **Сигнал:** {signal}\n"
+        f"💹 **Сигнал:** {signal} на {duration} минут\n"
         f"📝 {signal_desc}\n"
-        f"⏱ **Таймфрейм:** 1M\n"
+        f"⏱ **Таймфрейм анализа:** 1M\n"
         f"📊 **Уверенность:** {confidence_value}%\n\n"
         f"{smpa_text}\n\n"
         f"{candlestick_text}\n\n"
