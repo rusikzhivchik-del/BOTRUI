@@ -1,7 +1,8 @@
 import random
 import asyncio
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher
 from aiogram.types import Message
+from aiogram.filters import Command
 
 # ------------------- НАСТРОЙКИ -------------------
 API_TOKEN = "8672741740:AAHDn8SPjl6UazjaK4ZP0zKYZoAYChq--MA"
@@ -26,11 +27,11 @@ phrases = [
 ]
 
 # ------------------- КОМАНДЫ -------------------
-@dp.message(commands=["start"])
+@dp.message(Command("start"))
 async def cmd_start(message: Message):
     await message.answer("📸 Отправь скрин графика — я дам сигнал")
 
-@dp.message(commands=["startbot"])
+@dp.message(Command("startbot"))
 async def cmd_startbot(message: Message):
     global BOT_ACTIVE
     if message.from_user.username != ADMIN_USERNAME:
@@ -38,7 +39,7 @@ async def cmd_startbot(message: Message):
     BOT_ACTIVE = True
     await message.answer("✅ Бот снова активен.")
 
-@dp.message(commands=["stopbot"])
+@dp.message(Command("stopbot"))
 async def cmd_stopbot(message: Message):
     global BOT_ACTIVE
     if message.from_user.username != ADMIN_USERNAME:
