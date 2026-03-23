@@ -18,15 +18,13 @@ ALLOWED_USERS = {ADMIN_USERNAME}
 
 # ------------------- ДАННЫЕ ДЛЯ СИГНАЛОВ -------------------
 signals = [
-    ("BUY 🟢", "💚 Повышение — ожидается рост цены"),
-    ("SELL 🔴", "❤️ Понижение — ожидается падение цены")
+    ("BUY 🟢", "Покупка — ожидается рост цены"),
+    ("SELL 🔴", "Понижение — ожидается падение цены")
 ]
 phrases = [
-    "📊 Анализ графика завершён...",
-    "🔍 Сильный паттерн Smart Money PA обнаружен",
-    "🧠 Нейросеть подтверждает сигнал",
-    "📈 График показывает точку входа",
-    "⚡ Импульс движения усиливается"
+    "Сильный паттерн Smart Money PA обнаружен",
+    "Анализ графика завершён",
+    "График показывает точку входа"
 ]
 confidence_range = (68, 91)
 durations = [1, 2, 3]  # минуты для бинарного опциона
@@ -45,7 +43,7 @@ async def stop_bot(message: Message):
     if message.from_user.username != ADMIN_USERNAME:
         return
     BOT_ACTIVE = False
-    await message.answer("⛔ Бот приостановлен. Фото больше не обрабатываются.")
+    await message.answer("Бот приостановлен.")
 
 @dp.message(Command(commands=["startbot"]))
 async def start_bot(message: Message):
@@ -53,7 +51,7 @@ async def start_bot(message: Message):
     if message.from_user.username != ADMIN_USERNAME:
         return
     BOT_ACTIVE = True
-    await message.answer("✅ Бот снова активен.")
+    await message.answer("Бот снова активен.")
 
 @dp.message(Command(commands=["adduser"]))
 async def add_user(message: Message):
@@ -65,7 +63,7 @@ async def add_user(message: Message):
         return
     username_to_add = parts[1].lstrip("@")
     ALLOWED_USERS.add(username_to_add)
-    await message.answer(f"✅ Пользователь @{username_to_add} добавлен.")
+    await message.answer(f"Пользователь @{username_to_add} добавлен.")
 
 @dp.message(Command(commands=["deluser"]))
 async def del_user(message: Message):
@@ -77,24 +75,24 @@ async def del_user(message: Message):
         return
     username_to_remove = parts[1].lstrip("@")
     ALLOWED_USERS.discard(username_to_remove)
-    await message.answer(f"❌ Пользователь @{username_to_remove} удалён.")
+    await message.answer(f"Пользователь @{username_to_remove} удалён.")
 
 # ------------------- ОБРАБОТЧИК ФОТО -------------------
 @dp.message(F.content_type == ContentType.PHOTO)
 async def handle_photo(message: Message):
     if not BOT_ACTIVE:
-        await message.answer("⛔ Бот временно приостановлен.")
+        await message.answer("Бот временно приостановлен.")
         return
     if message.from_user.username not in ALLOWED_USERS:
-        await message.answer("⛔ У вас нет доступа к боту.")
+        await message.answer("У вас нет доступа к боту.")
         return
 
     # Рандомная пауза 3-10 секунд
     wait_time = random.randint(3, 10)
-    await message.answer(f"⏳ Анализируем график, подождите {wait_time} секунд...")
+    await message.answer(f"Анализируем график, подождите {wait_time} секунд...")
     await asyncio.sleep(wait_time)
 
-    # Выбор сигнала и длительности для бинарного опциона
+    # Выбор сигнала и длительности бинарного опциона
     signal, signal_desc = random.choice(signals)
     duration = random.choice(durations)  # 1,2,3 минуты
     confidence_value = random.randint(*confidence_range)
@@ -102,26 +100,29 @@ async def handle_photo(message: Message):
 
     # Smart Money PA текст
     smpa_text = (
-        "📌 **Smart Money PA (1M таймфрейм):**\n"
-        "• 🔹 Определяем зоны интереса крупных участников\n"
-        "• 🔹 Ищем подтверждающий импульс для входа\n"
-        "• 🔹 Сигнал сформирован на основе активности «умных денег»"
+        "Smart Money PA (1M таймфрейм):\n"
+        "• Определяем зоны интереса крупных участников\n"
+        "• Ищем подтверждающий импульс для входа"
     )
 
-    # Случайно выбираем 1-2 свечных паттерна
-    chosen_patterns = random.sample(candlestick_patterns, k=random.randint(1,2))
-    candlestick_text = "🕯 **Свечные паттерны:**\n" + "\n".join(f"• {p}" for p in chosen_patterns)
+    # Выбираем 1 случайный свечной паттерн
+    chosen_pattern = random.choice(candlestick_patterns)
+    candlestick_text = f"Свечной паттерн:\n• {chosen_pattern}"
 
-    # Финальный ответ
+    # Простой анализ после сигнала
+    simple_analysis = "Анализ: цена реагирует на зоны спроса и предложения, сигнал подтверждён текущим движением."
+
+    # Формируем финальный ответ
     response = (
         f"🎯 {phrase}\n\n"
-        f"💹 **Сигнал:** {signal} на {duration} минут\n"
+        f"💹 Сигнал: {signal} на {duration} минут\n"
         f"📝 {signal_desc}\n"
-        f"⏱ **Таймфрейм анализа:** 1M\n"
-        f"📊 **Уверенность:** {confidence_value}%\n\n"
+        f"⏱ Таймфрейм анализа: 1M\n"
+        f"📊 Уверенность: {confidence_value}%\n\n"
         f"{smpa_text}\n\n"
         f"{candlestick_text}\n\n"
-        f"⚠️ *Не является финансовой рекомендацией*"
+        f"{simple_analysis}\n\n"
+        f"⚠️ Не является финансовой рекомендацией"
     )
 
     await message.answer(response, parse_mode="Markdown")
