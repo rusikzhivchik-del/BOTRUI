@@ -1,5 +1,6 @@
 import random
 import asyncio
+import time
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, ContentType
 from aiogram.filters import Command
@@ -7,6 +8,8 @@ from aiogram.filters import Command
 # ------------------- НАСТРОЙКИ -------------------
 API_TOKEN = "8672741740:AAHDn8SPjl6UazjaK4ZP0zKYZoAYChq--MA"
 ADMIN_USERNAME = "rusik_tut1"
+MAX_FILE_SIZE_MB = 5  # максимальный размер фото
+REQUEST_COOLDOWN = 60  # ограничение: 1 запрос в 60 секунд
 
 # ------------------- ИНИЦИАЛИЗАЦИЯ -------------------
 bot = Bot(token=API_TOKEN)
@@ -15,6 +18,7 @@ dp = Dispatcher()
 # ------------------- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ -------------------
 BOT_ACTIVE = True
 ALLOWED_USERS = {ADMIN_USERNAME}
+LAST_REQUEST_TIME = {}  # хранение времени последнего запроса пользователя
 
 # ------------------- ДАННЫЕ ДЛЯ СИГНАЛОВ -------------------
 signals = [
@@ -27,7 +31,7 @@ phrases = [
     "График показывает точку входа"
 ]
 confidence_range = (68, 91)
-durations = [1, 2, 3]  # минуты для бинарного опциона
+durations = [1, 2, 3]
 candlestick_patterns = [
     "Доджи — неопределённость, возможный разворот",
     "Марубозу — сильный тренд без теней",
@@ -35,8 +39,6 @@ candlestick_patterns = [
     "Молот — сигнал на разворот вверх",
     "Пинбар — указывает на разворот или продолжение движения"
 ]
-
-# ------------------- РАЗНЫЕ КОММЕНТАРИИ -------------------
 entry_comments = [
     "Цена подошла к ключевой зоне сопротивления, крупные игроки активно продают, подтверждение на свечах.",
     "На рынке формируется структура падения, сигнал подтверждается динамикой объёма.",
@@ -87,6 +89,24 @@ async def del_user(message: Message):
     ALLOWED_USERS.discard(username_to_remove)
     await message.answer(f"Пользователь @{username_to_remove} удалён.")
 
+# ------------------- КОМАНДА /HELP -------------------
+@dp.message(Command(commands=["help"]))
+async def help_command(message: Message):
+    help_text = (
+        "📌 **Список команд бота:**\n\n"
+        "**Админские команды:**\n"
+        "/startbot — запуск бота\n"
+        "/stopbot — приостановка работы бота\n"
+        "/adduser <username> — добавить пользователя\n"
+        "/deluser <username> — удалить пользователя\n\n"
+        "**Для всех разрешённых пользователей:**\n"
+        "Отправьте фото графика, и бот пришлёт анализ сигнала.\n"
+        f"⚠️ Ограничение: максимальный размер фото — {MAX_FILE_SIZE_MB} МБ.\n"
+        f"⚠️ Ограничение: один запрос в {REQUEST_COOLDOWN} секунду.\n"
+        "⚠️ Не является финансовой рекомендацией."
+    )
+    await message.answer(help_text, parse_mode="Markdown")
+
 # ------------------- ОБРАБОТЧИК ФОТО -------------------
 @dp.message(F.content_type == ContentType.PHOTO)
 async def handle_photo(message: Message):
@@ -97,32 +117,40 @@ async def handle_photo(message: Message):
         await message.answer("У вас нет доступа к боту.")
         return
 
+    # Проверка лимита по времени
+    now = time.time()
+    last_time = LAST_REQUEST_TIME.get(message.from_user.username, 0)
+    if now - last_time < REQUEST_COOLDOWN:
+        wait_seconds = int(REQUEST_COOLDOWN - (now - last_time))
+        await message.answer(f"⏳ Подождите {wait_seconds} секунд перед отправкой следующего фото.")
+        return
+    LAST_REQUEST_TIME[message.from_user.username] = now
+
+    # Проверка размера файла
+    photo = message.photo[-1]
+    if photo.file_size > MAX_FILE_SIZE_MB * 1024 * 1024:
+        await message.answer(f"Файл слишком большой! Максимум {MAX_FILE_SIZE_MB} МБ.")
+        return
+
     # Рандомная пауза 3-10 секунд
     wait_time = random.randint(3, 10)
     await message.answer(f"Анализируем график, подождите {wait_time} секунд...")
     await asyncio.sleep(wait_time)
 
-    # Выбор сигнала и длительности бинарного опциона
+    # Генерация сигнала
     signal, signal_desc = random.choice(signals)
     duration = random.choice(durations)
     confidence_value = random.randint(*confidence_range)
     phrase = random.choice(phrases)
-
-    # Smart Money PA текст
     smpa_text = (
         "Smart Money PA (1M таймфрейм):\n"
         "• Определяем зоны интереса крупных участников\n"
         "• Ищем подтверждающий импульс для входа"
     )
-
-    # Выбираем 1 случайный свечной паттерн
     chosen_pattern = random.choice(candlestick_patterns)
     candlestick_text = f"Свечной паттерн:\n• {chosen_pattern}"
-
-    # Выбираем случайный комментарий
     comment_text = random.choice(entry_comments)
 
-    # Формируем финальный ответ
     response = (
         f"🎯 {phrase}\n\n"
         f"💹 Сигнал: {signal} на {duration} минут\n"
