@@ -34,6 +34,9 @@ def save_users():
 
 ALLOWED_USERS = load_users()  # загрузка при старте
 
+def is_allowed(username: str):
+    return username.lower() in ALLOWED_USERS
+
 # ------------------- ДАННЫЕ ДЛЯ СИГНАЛОВ -------------------
 signals = [
     ("BUY 🟢", "Покупка — ожидается рост цены"),
@@ -62,9 +65,6 @@ entry_comments = [
     "Тестирование ключевого уровня и подтверждение свечным паттерном указывают на нисходящее движение."
 ]
 
-def is_allowed(user_id: int):
-    return user_id in ALLOWED_USERS
-
 # ------------------- КОМАНДЫ АДМИНА -------------------
 @dp.message(Command(commands=["stopbot"]))
 async def stop_bot(message: Message):
@@ -88,15 +88,12 @@ async def add_user(message: Message):
         return
     parts = message.text.split()
     if len(parts) < 2:
-        await message.answer("Используй: /adduser <user_id>")
+        await message.answer("Используй: /adduser <username без @>")
         return
-    try:
-        user_id_to_add = int(parts[1])
-        ALLOWED_USERS.add(user_id_to_add)
-        save_users()
-        await message.answer(f"Пользователь {user_id_to_add} добавлен.")
-    except ValueError:
-        await message.answer("Ошибка! Укажи корректный числовой ID пользователя.")
+    username_to_add = parts[1].lstrip("@")
+    ALLOWED_USERS.add(username_to_add.lower())
+    save_users()
+    await message.answer(f"Пользователь @{username_to_add} добавлен.")
 
 @dp.message(Command(commands=["deluser"]))
 async def del_user(message: Message):
@@ -104,17 +101,13 @@ async def del_user(message: Message):
         return
     parts = message.text.split()
     if len(parts) < 2:
-        await message.answer("Используй: /deluser <user_id>")
+        await message.answer("Используй: /deluser <username без @>")
         return
-    try:
-        user_id_to_remove = int(parts[1])
-        ALLOWED_USERS.discard(user_id_to_remove)
-        save_users()
-        await message.answer(f"Пользователь {user_id_to_remove} удалён.")
-    except ValueError:
-        await message.answer("Ошибка! Укажи корректный числовой ID пользователя.")
+    username_to_remove = parts[1].lstrip("@")
+    ALLOWED_USERS.discard(username_to_remove.lower())
+    save_users()
+    await message.answer(f"Пользователь @{username_to_remove} удалён.")
 
-# ------------------- КОМАНДА ДЛЯ ПРОСМОТРА ВСЕХ ПОЛЬЗОВАТЕЛЕЙ -------------------
 @dp.message(Command(commands=["allusers"]))
 async def all_users(message: Message):
     if message.from_user.id not in ADMIN_IDS:
@@ -122,10 +115,9 @@ async def all_users(message: Message):
     if not ALLOWED_USERS:
         await message.answer("Список пользователей пуст.")
     else:
-        users_list = "\n".join(str(uid) for uid in ALLOWED_USERS)
+        users_list = "\n".join("@" + uname for uname in ALLOWED_USERS)
         await message.answer(f"📋 Все пользователи бота:\n{users_list}")
 
-# ------------------- КОМАНДА /HELP -------------------
 @dp.message(Command(commands=["help"]))
 async def help_command(message: Message):
     help_text = (
@@ -133,8 +125,8 @@ async def help_command(message: Message):
         "**Админские команды:**\n"
         "/startbot — запуск бота\n"
         "/stopbot — приостановка работы бота\n"
-        "/adduser <user_id> — добавить пользователя\n"
-        "/deluser <user_id> — удалить пользователя\n"
+        "/adduser <username> — добавить пользователя\n"
+        "/deluser <username> — удалить пользователя\n"
         "/allusers — показать всех пользователей\n\n"
         "**Для всех разрешённых пользователей:**\n"
         "Отправьте фото графика, и бот пришлёт анализ сигнала.\n"
@@ -150,17 +142,18 @@ async def handle_photo(message: Message):
     if not BOT_ACTIVE:
         await message.answer("Бот временно приостановлен.")
         return
-    if not is_allowed(message.from_user.id):
+    username = message.from_user.username
+    if not username or not is_allowed(username.lower()):
         await message.answer("У вас нет доступа к боту.")
         return
 
     now = time.time()
-    last_time = LAST_REQUEST_TIME.get(message.from_user.id, 0)
+    last_time = LAST_REQUEST_TIME.get(username.lower(), 0)
     if now - last_time < REQUEST_COOLDOWN:
         wait_seconds = int(REQUEST_COOLDOWN - (now - last_time))
         await message.answer(f"⏳ Подождите {wait_seconds} секунд перед отправкой следующего фото.")
         return
-    LAST_REQUEST_TIME[message.from_user.id] = now
+    LAST_REQUEST_TIME[username.lower()] = now
 
     photo = message.photo[-1]
     if photo.file_size > MAX_FILE_SIZE_MB * 1024 * 1024:
