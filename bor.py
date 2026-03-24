@@ -8,8 +8,8 @@ from aiogram.types import Message, ContentType
 from aiogram.filters import Command
 
 # ------------------- НАСТРОЙКИ -------------------
-API_TOKEN = os.getenv("BOT_API_TOKEN")  # токен будет из переменной окружения
-ADMIN_IDS = {7620618611}  # твой ID
+API_TOKEN = os.getenv("BOT_API_TOKEN")  # токен из переменной окружения Railway
+ADMIN_IDS = {7620618611}  # твой Telegram ID
 MAX_FILE_SIZE_MB = 5
 REQUEST_COOLDOWN = 60
 USERS_FILE = "users.json"
@@ -114,15 +114,16 @@ async def del_user(message: Message):
     except ValueError:
         await message.answer("Ошибка! Укажи корректный числовой ID пользователя.")
 
-@dp.message(Command(commands=["listusers"]))
-async def list_users(message: Message):
+# ------------------- КОМАНДА ДЛЯ ПРОСМОТРА ВСЕХ ПОЛЬЗОВАТЕЛЕЙ -------------------
+@dp.message(Command(commands=["allusers"]))
+async def all_users(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         return
     if not ALLOWED_USERS:
         await message.answer("Список пользователей пуст.")
     else:
         users_list = "\n".join(str(uid) for uid in ALLOWED_USERS)
-        await message.answer(f"Текущие пользователи:\n{users_list}")
+        await message.answer(f"📋 Все пользователи бота:\n{users_list}")
 
 # ------------------- КОМАНДА /HELP -------------------
 @dp.message(Command(commands=["help"]))
@@ -134,7 +135,7 @@ async def help_command(message: Message):
         "/stopbot — приостановка работы бота\n"
         "/adduser <user_id> — добавить пользователя\n"
         "/deluser <user_id> — удалить пользователя\n"
-        "/listusers — показать всех пользователей\n\n"
+        "/allusers — показать всех пользователей\n\n"
         "**Для всех разрешённых пользователей:**\n"
         "Отправьте фото графика, и бот пришлёт анализ сигнала.\n"
         f"⚠️ Ограничение: максимальный размер фото — {MAX_FILE_SIZE_MB} МБ.\n"
