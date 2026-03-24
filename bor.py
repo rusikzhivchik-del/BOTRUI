@@ -8,9 +8,8 @@ from aiogram.types import Message, ContentType
 from aiogram.filters import Command
 
 # ------------------- НАСТРОЙКИ -------------------
-API_TOKEN = os.getenv("BOT_TOKEN")  # токен теперь из Railway ENV
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")  # твой username без @
-ADMIN_ID = int(os.getenv("ADMIN_ID"))  # твой Telegram ID
+API_TOKEN = os.getenv("BOT_TOKEN")  # токен из ENV
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")  # username без @
 
 # ------------------- ИНИЦИАЛИЗАЦИЯ -------------------
 bot = Bot(token=API_TOKEN)
@@ -18,7 +17,7 @@ dp = Dispatcher()
 
 # ------------------- ГЛОБАЛЬНЫЕ -------------------
 BOT_ACTIVE = True
-ALLOWED_USERS = {ADMIN_USERNAME}
+ALLOWED_USERS = {ADMIN_USERNAME} if ADMIN_USERNAME else set()
 
 user_activity = {}
 suspicious_log = []
@@ -38,14 +37,6 @@ phrases = [
 
 confidence_range = (68, 91)
 durations = [1, 2, 3]
-
-candlestick_patterns = [
-    "Доджи — неопределённость, возможный разворот",
-    "Марубозу — сильный тренд без теней",
-    "Падающая звезда — сигнал на разворот вниз",
-    "Молот — сигнал на разворот вверх",
-    "Пинбар — указывает на разворот или продолжение движения"
-]
 
 entry_comments = [
     "Цена подошла к ключевой зоне сопротивления, крупные игроки активно продают.",
@@ -73,12 +64,6 @@ async def track_users(message: Message):
             "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "text": message.text
         })
-
-        # уведомление админу
-        await bot.send_message(
-            ADMIN_ID,
-            f"🚨 Попытка доступа!\n@{username}\nID: {user_id}"
-        )
 
 # ------------------- АНТИ-ФЛУД -------------------
 def is_flood(user_id):
@@ -202,4 +187,7 @@ async def handle_photo(message: Message):
 
 # ------------------- ЗАПУСК -------------------
 if __name__ == "__main__":
+    if not API_TOKEN:
+        raise ValueError("BOT_TOKEN не задан!")
+
     asyncio.run(dp.start_polling(bot))
