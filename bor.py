@@ -132,7 +132,7 @@ async def help_command(message: Message):
         "Отправьте фото графика, и бот пришлёт анализ сигнала.\n"
         f"⚠️ Ограничение: максимальный размер фото — {MAX_FILE_SIZE_MB} МБ.\n"
         f"⚠️ Ограничение: один запрос в {REQUEST_COOLDOWN} секунду.\n"
-        "⚠️ Не является финансовой рекомендацией."
+        
     )
     await message.answer(help_text, parse_mode="Markdown")
 
@@ -186,7 +186,7 @@ async def handle_photo(message: Message):
         f"{smpa_text}\n\n"
         f"{candlestick_text}\n\n"
         f"💡 Комментарий: {comment_text}\n\n"
-        f"⚠️ Не является финансовой рекомендацией"
+        
     )
 
     await message.answer(response, parse_mode="Markdown")
