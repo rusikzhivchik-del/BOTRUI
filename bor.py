@@ -8,8 +8,8 @@ from aiogram.types import Message, ContentType
 from aiogram.filters import Command
 
 # ------------------- НАСТРОЙКИ -------------------
-API_TOKEN = os.getenv("BOT_API_TOKEN")  # токен из переменной окружения Railway
-ADMIN_IDS = {7620618611}  # твой Telegram ID
+API_TOKEN = os.getenv("BOT_API_TOKEN")
+ADMIN_IDS = {8109284840}  # <-- обновлённый админ ID
 MAX_FILE_SIZE_MB = 5
 REQUEST_COOLDOWN = 60
 USERS_FILE = "users.json"
@@ -20,7 +20,7 @@ dp = Dispatcher()
 BOT_ACTIVE = True
 LAST_REQUEST_TIME = {}
 
-# ------------------- ФУНКЦИИ ЗАГРУЗКИ И СОХРАНЕНИЯ ПОЛЬЗОВАТЕЛЕЙ -------------------
+# ------------------- ФУНКЦИИ ПОЛЬЗОВАТЕЛЕЙ -------------------
 def load_users():
     try:
         with open(USERS_FILE, "r") as f:
@@ -32,23 +32,26 @@ def save_users():
     with open(USERS_FILE, "w") as f:
         json.dump(list(ALLOWED_USERS), f)
 
-ALLOWED_USERS = load_users()  # загрузка при старте
+ALLOWED_USERS = load_users()
 
 def is_allowed(username: str):
     return username.lower() in ALLOWED_USERS
 
-# ------------------- ДАННЫЕ ДЛЯ СИГНАЛОВ -------------------
+# ------------------- ДАННЫЕ -------------------
 signals = [
     ("BUY 🟢", "Покупка — ожидается рост цены"),
     ("SELL 🔴", "Понижение — ожидается падение цены")
 ]
+
 phrases = [
     "Сильный паттерн Smart Money PA обнаружен",
     "Анализ графика завершён",
     "График показывает точку входа"
 ]
+
 confidence_range = (68, 91)
 durations = [1, 2, 3]
+
 candlestick_patterns = [
     "Доджи — неопределённость, возможный разворот",
     "Марубозу — сильный тренд без теней",
@@ -56,6 +59,7 @@ candlestick_patterns = [
     "Молот — сигнал на разворот вверх",
     "Пинбар — указывает на разворот или продолжение движения"
 ]
+
 entry_comments = [
     "Цена подошла к ключевой зоне сопротивления, крупные игроки активно продают, подтверждение на свечах.",
     "На рынке формируется структура падения, сигнал подтверждается динамикой объёма.",
@@ -65,7 +69,7 @@ entry_comments = [
     "Тестирование ключевого уровня и подтверждение свечным паттерном указывают на нисходящее движение."
 ]
 
-# ------------------- КОМАНДЫ АДМИНА -------------------
+# ------------------- АДМИН КОМАНДЫ -------------------
 @dp.message(Command(commands=["stopbot"]))
 async def stop_bot(message: Message):
     global BOT_ACTIVE
@@ -86,10 +90,12 @@ async def start_bot(message: Message):
 async def add_user(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         return
+
     parts = message.text.split()
     if len(parts) < 2:
         await message.answer("Используй: /adduser <username без @>")
         return
+
     username_to_add = parts[1].lstrip("@")
     ALLOWED_USERS.add(username_to_add.lower())
     save_users()
@@ -99,10 +105,12 @@ async def add_user(message: Message):
 async def del_user(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         return
+
     parts = message.text.split()
     if len(parts) < 2:
         await message.answer("Используй: /deluser <username без @>")
         return
+
     username_to_remove = parts[1].lstrip("@")
     ALLOWED_USERS.discard(username_to_remove.lower())
     save_users()
@@ -112,6 +120,7 @@ async def del_user(message: Message):
 async def all_users(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         return
+
     if not ALLOWED_USERS:
         await message.answer("Список пользователей пуст.")
     else:
@@ -130,18 +139,18 @@ async def help_command(message: Message):
         "/allusers — показать всех пользователей\n\n"
         "**Для всех разрешённых пользователей:**\n"
         "Отправьте фото графика, и бот пришлёт анализ сигнала.\n"
-        f"⚠️ Ограничение: максимальный размер фото — {MAX_FILE_SIZE_MB} МБ.\n"
-        f"⚠️ Ограничение: один запрос в {REQUEST_COOLDOWN} секунду.\n"
-        
+        f"⚠️ Максимальный размер фото — {MAX_FILE_SIZE_MB} МБ.\n"
+        f"⚠️ Один запрос в {REQUEST_COOLDOWN} секунд."
     )
     await message.answer(help_text, parse_mode="Markdown")
 
-# ------------------- ОБРАБОТЧИК ФОТО -------------------
+# ------------------- ФОТО -------------------
 @dp.message(F.content_type == ContentType.PHOTO)
 async def handle_photo(message: Message):
     if not BOT_ACTIVE:
         await message.answer("Бот временно приостановлен.")
         return
+
     username = message.from_user.username
     if not username or not is_allowed(username.lower()):
         await message.answer("У вас нет доступа к боту.")
@@ -149,10 +158,12 @@ async def handle_photo(message: Message):
 
     now = time.time()
     last_time = LAST_REQUEST_TIME.get(username.lower(), 0)
+
     if now - last_time < REQUEST_COOLDOWN:
         wait_seconds = int(REQUEST_COOLDOWN - (now - last_time))
-        await message.answer(f"⏳ Подождите {wait_seconds} секунд перед отправкой следующего фото.")
+        await message.answer(f"⏳ Подождите {wait_seconds} секунд.")
         return
+
     LAST_REQUEST_TIME[username.lower()] = now
 
     photo = message.photo[-1]
@@ -161,36 +172,27 @@ async def handle_photo(message: Message):
         return
 
     wait_time = random.randint(3, 10)
-    await message.answer(f"Анализируем график, подождите {wait_time} секунд...")
+    await message.answer(f"Анализируем график ({wait_time} сек)...")
     await asyncio.sleep(wait_time)
 
     signal, signal_desc = random.choice(signals)
     duration = random.choice(durations)
     confidence_value = random.randint(*confidence_range)
     phrase = random.choice(phrases)
-    smpa_text = (
-        "Smart Money PA (1M таймфрейм):\n"
-        "• Определяем зоны интереса крупных участников\n"
-        "• Ищем подтверждающий импульс для входа"
-    )
     chosen_pattern = random.choice(candlestick_patterns)
-    candlestick_text = f"Свечной паттерн:\n• {chosen_pattern}"
     comment_text = random.choice(entry_comments)
 
     response = (
         f"🎯 {phrase}\n\n"
         f"💹 Сигнал: {signal} на {duration} минут\n"
         f"📝 {signal_desc}\n"
-        f"⏱ Таймфрейм анализа: 1M\n"
         f"📊 Уверенность: {confidence_value}%\n\n"
-        f"{smpa_text}\n\n"
-        f"{candlestick_text}\n\n"
-        f"💡 Комментарий: {comment_text}\n\n"
-        
+        f"Свечной паттерн:\n• {chosen_pattern}\n\n"
+        f"💡 Комментарий: {comment_text}"
     )
 
     await message.answer(response, parse_mode="Markdown")
 
-# ------------------- ЗАПУСК БОТА -------------------
+# ------------------- ЗАПУСК -------------------
 if __name__ == '__main__':
     asyncio.run(dp.start_polling(bot))
